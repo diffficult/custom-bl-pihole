@@ -1,0 +1,22 @@
+#!/bin/bash
+for source in `cat lists.lst`; do
+    echo $source;
+    curl --silent $source >> adblock.raw
+    echo -e "\t`wc -l adblock.raw | cut -d " " -f 1` lines downloaded"
+done
+
+echo -e "\nFiltering non-url content..."
+perl easylist.pl adblock.raw > adblock.parsed
+rm adblock.raw
+echo -e "\t`wc -l adblock.parsed | cut -d " " -f 1` lines after parsing"
+
+echo -e "\nRemoving duplicates..."
+sort -u adblock.parsed > adblock.hosts
+rm adblock.parsed
+echo -e "\t`wc -l adblock.hosts | cut -d " " -f 1` lines after deduping"
+
+sudo cp adblock.hosts /var/www/html/custom-list/adblock.hosts
+echo -e "adblock.hosts updated"
+
+echo -e "Running pihole -g and updating all lists"
+pihole -g
